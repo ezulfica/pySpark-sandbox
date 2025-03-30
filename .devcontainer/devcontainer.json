@@ -1,0 +1,23 @@
+{
+  "name": "Spark DevContainer with Python and uv",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "pyspark-env",
+  "workspaceFolder": "/workspace/",
+  //"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+    "customizations": {
+      "vscode": {
+        "extensions": [
+          "ms-python.python",
+          "redhat.vscode-yaml"
+        ],
+        "settings": {
+          "terminal.integrated.shell.linux": "/bin/bash",
+          "python.defaultInterpreterPath": "/workspace/.venv/bin/python",
+          "python.venvPath": "/workspace/.venv",
+          "python.venvFolders": [".venv"]  
+        }
+      }
+    },
+    "postCreateCommand": "cd /workspace && uv sync"
+  }
+  

@@ -1,0 +1,77 @@
+version: "3.8"
+
+services:
+  spark-master:
+    image: bitnami/spark:latest
+    container_name: spark-master
+    hostname: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_LOCAL_IP=spark-master
+    ports:
+      - "8080:8080"  # Web UI
+      - "7077:7077"
+    volumes:
+      - ../:/workspace
+      - ../spark-config:/workspace/spark-config
+    networks:
+      - spark-network
+
+  spark-worker:
+    image: bitnami/spark:latest
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_CONF_DIR=/workspace/spark-config
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    volumes:
+      - ../spark-config:/workspace/spark-config
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: "2"  # Limit each worker to 2 CPU cores
+          memory: "4GB"  # Limit each worker to 4GB RAM
+        reservations:
+          cpus: "1"
+          memory: "2GB"
+    networks:
+      - spark-network
+
+  history-server:
+    image: bitnami/spark:latest
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_CONF_DIR=/workspace/spark-config
+      - SPARK_MODE=history-server
+      - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=file:/workspace/spark-events
+    ports:
+      - "18080:18080"
+    volumes:
+      - ../spark-events:/workspace/spark-events
+    networks:
+      - spark-network
+
+  pyspark-env:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile  # Points to our custom Dockerfile for Python + uv
+    container_name: python-env
+    depends_on:
+      - spark-master
+    working_dir: /workspace
+    volumes:
+      - ../:/workspace
+      - ../spark-data:/workspace/spark-data  # Mount for Delta tables
+    environment:
+      - PATH="/workspace/.venv/bin:$PATH"
+    command: tail -f /dev/null
+    networks:
+      - spark-network
+
+# Define the network at the bottom
+networks:
+  spark-network:
+    driver: bridge

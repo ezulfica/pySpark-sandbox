@@ -1,0 +1,3 @@
+# Ignore virtual environments and dependencies
+.venv/
+uv.lock
