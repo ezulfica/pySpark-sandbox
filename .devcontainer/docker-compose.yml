@@ -2,31 +2,41 @@ version: "3.8"
 
 services:
   spark-master:
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.4.1
     container_name: spark-master
     hostname: spark-master
     environment:
       - SPARK_MODE=master
       - SPARK_LOCAL_IP=spark-master
+      - PYSPARK_PYTHON=/usr/bin/python3.11
+      - PYSPARK_DRIVER_PYTHON=/usr/bin/python3.11
+      - HADOOP_HOME=/opt/hadoop
+      - LD_LIBRARY_PATH=/opt/hadoop/lib/native:$LD_LIBRARY_PATH
     ports:
       - "8080:8080"  # Web UI
       - "7077:7077"
     volumes:
       - ../:/workspace
       - ../spark-config:/workspace/spark-config
+      - ../hadoop-config:/opt/hadoop/etc/hadoop
     networks:
       - spark-network
 
   spark-worker:
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.4.1
     depends_on:
       - spark-master
     environment:
       - SPARK_CONF_DIR=/workspace/spark-config
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
+      - PYSPARK_PYTHON=/usr/bin/python3.11
+      - PYSPARK_DRIVER_PYTHON=/usr/bin/python3.11
+      - HADOOP_HOME=/usr/local/hadoop
+      - LD_LIBRARY_PATH=/usr/local/hadoop/lib/native:$LD_LIBRARY_PATH
     volumes:
       - ../spark-config:/workspace/spark-config
+      - ../hadoop-config:/opt/hadoop/etc/hadoop
     deploy:
       replicas: 2
       resources:
@@ -40,7 +50,7 @@ services:
       - spark-network
 
   history-server:
-    image: bitnami/spark:latest
+    image: bitnami/spark:3.4.1
     depends_on:
       - spark-master
     environment:
